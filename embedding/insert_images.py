@@ -17,6 +17,8 @@ from pymilvus import (
 )
 
 import aiohttp
+import asyncio
+import os
 
 
 async def get_embedding_async(text: str, file_path: str, url: str = "http://36.213.0.171:8001/encode/"):
@@ -110,10 +112,6 @@ async def async_process_item(item):
         "vector": vector,
         "metadata": item
     }
-
-
-import asyncio
-import os
 
 
 # 将 Milvus 插入和写入 inserted_ids 操作放入到每个批次中
