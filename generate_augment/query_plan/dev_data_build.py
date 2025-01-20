@@ -1,0 +1,51 @@
+# -*- coding: utf-8 -*-
+# @Time    : 2024/12/27 00:28
+# @Author  : blue
+# @Description : 
+import os
+
+os.environ["HF_HOME"] = "/data1/zch/tmp"
+os.environ["TMPDIR"] = "/data1/zch/tmp"
+
+from util.api import *
+from util.chat_template import *
+from openai import OpenAI
+
+model = "qwen2.5-instruct"
+base_url = "http://36.213.0.171:9997/v1/"
+
+path = '/data1/zch/datasets/multimodalqa/MMQA_dev.jsonl'
+store_path = './dev_data_v1.jsonl'
+
+data = read_jsonl(path)
+
+api_key = 'test'
+client = OpenAI(
+    api_key=api_key,
+    base_url=base_url,
+)
+
+f, processed_results = get_output_file(store_path, force=False)
+for item in tqdm(data):
+    qid = item['qid']
+    if qid in processed_results:
+        continue
+    question = item['question']
+    answer = item['answers'][0]['answer']
+    supporting_context = item['supporting_context']
+    messages = get_dev_query_plan_prompt(question=question)
+    chat_completion = client.chat.completions.create(
+        messages=messages,
+        model=model,
+    )
+    f.write(json.dumps({
+        "qid": qid,
+        "question": question,
+        "answer": answer,
+        "supporting_context": supporting_context,
+        "dag": chat_completion.choices[0].message.content,
+        "prompt": messages[0]['content'],
+
+    }) + "\n")
+    f.flush()
+f.close()
